@@ -10,7 +10,7 @@ RELAY_PINS = [
 ]
 
 # API ключ для авторизации (измените на свой секретный ключ)
-API_KEY = "your-secret-api-key-change-this"
+API_KEY = "api__HiGeHNTfboIizRfeJa0BQYcAhfbF8bis"
 
 # Настройки сервера
 HTTP_PORT = 80
