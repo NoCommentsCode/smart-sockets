@@ -1,0 +1,319 @@
+openapi: 3.0.3
+
+info:
+  title: Smart Sockets ESP32 API
+  version: 1.0.0
+  description: |
+    REST API для управления умными розетками на базе ESP32 (MicroPython).
+
+    ## Авторизация
+    Все эндпоинты требуют API ключ. Поддерживаются два способа передачи
+    (достаточно одного из них):
+    - Заголовок `X-API-Key: <ваш ключ>`
+    - Заголовок `Authorization: Bearer <ваш ключ>`
+
+    Ключ задаётся в файле `config.py` (параметр `API_KEY`).
+    При неверном или отсутствующем ключе возвращается `401 Unauthorized`.
+  license:
+    name: MIT
+
+servers:
+  - url: http://{deviceIp}
+    description: Устройство в локальной сети
+    variables:
+      deviceIp:
+        default: 192.168.1.100
+        description: IP-адрес ESP32 (выводится в Serial-консоль при старте)
+
+tags:
+  - name: Device
+    description: Информация об устройстве
+  - name: Relays
+    description: Управление розетками (реле)
+
+# Авторизация применяется ко всем эндпоинтам.
+# Два элемента массива = альтернативы (ИЛИ): достаточно любого одного.
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+paths:
+  /api/device/info:
+    get:
+      tags: [Device]
+      summary: Информация об устройстве
+      operationId: getDeviceInfo
+      responses:
+        '200':
+          description: Информация об устройстве
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/relays/status:
+    get:
+      tags: [Relays]
+      summary: Статус всех розеток
+      operationId: getAllRelaysStatus
+      responses:
+        '200':
+          description: Список розеток и их состояний
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelayListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/relay/{relayId}/status:
+    get:
+      tags: [Relays]
+      summary: Статус конкретной розетки
+      operationId: getRelayStatus
+      parameters:
+        - $ref: '#/components/parameters/RelayId'
+      responses:
+        '200':
+          description: Состояние розетки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelayStatus'
+        '400':
+          $ref: '#/components/responses/InvalidRelayId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RelayNotFound'
+
+  /api/relay/{relayId}/on:
+    post:
+      tags: [Relays]
+      summary: Включить розетку
+      operationId: turnRelayOn
+      parameters:
+        - $ref: '#/components/parameters/RelayId'
+      responses:
+        '200':
+          description: Розетка включена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: Реле 1 включено
+        '400':
+          $ref: '#/components/responses/InvalidRelayId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RelayNotFound'
+
+  /api/relay/{relayId}/off:
+    post:
+      tags: [Relays]
+      summary: Выключить розетку
+      operationId: turnRelayOff
+      parameters:
+        - $ref: '#/components/parameters/RelayId'
+      responses:
+        '200':
+          description: Розетка выключена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: Реле 1 выключено
+        '400':
+          $ref: '#/components/responses/InvalidRelayId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RelayNotFound'
+
+  /api/relays/all/on:
+    post:
+      tags: [Relays]
+      summary: Включить все розетки
+      operationId: turnAllRelaysOn
+      responses:
+        '200':
+          description: Все розетки включены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: Все реле включены
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/relays/all/off:
+    post:
+      tags: [Relays]
+      summary: Выключить все розетки
+      operationId: turnAllRelaysOff
+      responses:
+        '200':
+          description: Все розетки выключены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                success: true
+                message: Все реле выключены
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API ключ из `config.py`
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Тот же API ключ в формате `Authorization; Bearer <ключ>`
+
+  parameters:
+    RelayId:
+      name: relayId
+      in: path
+      required: true
+      description: ID розетки (задаётся в `RELAY_PINS` в `config.py`)
+      schema:
+        type: integer
+        minimum: 1
+      example: 1
+
+  schemas:
+    DeviceInfo:
+      type: object
+      required: [name, version, ip, relays_count, uptime]
+      properties:
+        name:
+          type: string
+          description: Название устройства
+          example: Smart Sockets ESP32
+        version:
+          type: string
+          description: Версия прошивки
+          example: 1.0.0
+        ip:
+          type: string
+          description: IP-адрес устройства в локальной сети
+          example: 192.168.1.100
+        relays_count:
+          type: integer
+          description: Количество настроенных розеток
+          example: 3
+        uptime:
+          type: integer
+          description: Время работы устройства в секундах
+          example: 3600
+
+    RelayStatus:
+      type: object
+      required: [id, name, state, state_text]
+      properties:
+        id:
+          type: integer
+          description: ID розетки
+          example: 1
+        name:
+          type: string
+          description: Человекочитаемое имя розетки
+          example: Розетка 1
+        state:
+          type: boolean
+          description: true — включено, false — выключено
+          example: false
+        state_text:
+          type: string
+          description: Состояние текстом
+          enum: [включено, выключено]
+          example: выключено
+
+    RelayListResponse:
+      type: object
+      required: [relays]
+      properties:
+        relays:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelayStatus'
+      example:
+        relays:
+          - id: 1
+            name: Розетка 1
+            state: false
+            state_text: выключено
+          - id: 2
+            name: Розетка 2
+            state: true
+            state_text: включено
+          - id: 3
+            name: Розетка 3
+            state: false
+            state_text: выключено
+
+    SuccessResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Реле 1 включено
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Код/краткое описание ошибки
+          example: Relay not found
+        message:
+          type: string
+          description: Подробное описание ошибки (присутствует не всегда)
+          example: Неверный или отсутствующий API ключ
+
+  responses:
+    Unauthorized:
+      description: Неверный или отсутствующий API ключ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Unauthorized
+            message: Неверный или отсутствующий API ключ
+    RelayNotFound:
+      description: Розетка с указанным ID не существует
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Relay not found
+    InvalidRelayId:
+      description: Некорректный ID розетки (ожидается целое число)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Invalid relay ID
