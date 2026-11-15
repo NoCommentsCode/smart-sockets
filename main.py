@@ -1,7 +1,8 @@
 import time
 
 from config import (WIFI_SSID, WIFI_PASSWORD, RELAY_PINS, API_KEY,
-                    HTTP_PORT, DEVICE_VERSION, DISPLAY_CONFIG)
+                    HTTP_PORT, DEVICE_VERSION, DISPLAY_CONFIG,
+                    WIFI_BSSID, WIFI_BSSID_STRICT, WIFI_CONNECT_TIMEOUT)
 from config_store import DeviceConfig
 from wifi_manager import WiFiManager
 from relay_controller import RelayController
@@ -16,7 +17,10 @@ def main():
     print(f"{device_config.device_name} v{DEVICE_VERSION}")
     print("=" * 50)
 
-    wifi = WiFiManager(WIFI_SSID, WIFI_PASSWORD)
+    wifi = WiFiManager(WIFI_SSID, WIFI_PASSWORD,
+                       bssid=WIFI_BSSID,
+                       strict_bssid=WIFI_BSSID_STRICT,
+                       timeout=WIFI_CONNECT_TIMEOUT)
     if not wifi.connect():
         print("Не удалось подключиться к WiFi. Перезапуск через 5 секунд...")
         time.sleep(5)
