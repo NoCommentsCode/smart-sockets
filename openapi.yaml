@@ -173,6 +173,66 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /api/device/config:
+    get:
+      tags: [Device]
+      summary: Редактируемый конфиг устройства
+      operationId: getDeviceConfig
+      responses:
+        '200':
+          description: Текущий конфиг
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Device]
+      summary: Изменить имя устройства, имена розеток и состояния по умолчанию
+      description: |
+        Частичное обновление. Можно передать только `device_name`, только список
+        `relays` с нужными ID, или всё вместе. В каждом элементе `relays` обязателен
+        `id` и хотя бы одно из полей `name` / `default_state`.
+
+        Изменение `default_state` НЕ переключает розетку немедленно — значение
+        применяется при следующей загрузке устройства.
+      operationId: updateDeviceConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceConfigUpdate'
+            example:
+              device_name: Кухня
+              relays:
+                - id: 1
+                  name: Чайник
+                - id: 2
+                  name: Подсветка
+                  default_state: true
+      responses:
+        '200':
+          description: Обновлённый конфиг
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceConfig'
+        '400':
+          description: Ошибка валидации или некорректный JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unknownRelay:
+                  value: { error: "Unknown relay id: 9" }
+                badType:
+                  value: { error: "default_state must be a boolean" }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -243,6 +303,10 @@ components:
           description: Состояние текстом
           enum: [включено, выключено]
           example: выключено
+        default_state:
+          type: boolean
+          description: Состояние розетки при загрузке устройства
+          example: false
 
     RelayListResponse:
       type: object
@@ -290,6 +354,62 @@ components:
           type: string
           description: Подробное описание ошибки (присутствует не всегда)
           example: Неверный или отсутствующий API ключ
+    
+    RelayConfig:
+      type: object
+      required: [id, name, default_state]
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          maxLength: 32
+          example: Чайник
+        default_state:
+          type: boolean
+          description: Состояние розетки при загрузке устройства
+          example: false
+
+    DeviceConfig:
+      type: object
+      required: [device_name, relays]
+      properties:
+        device_name:
+          type: string
+          maxLength: 32
+          example: Кухня
+        relays:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelayConfig'
+
+    RelayConfigUpdate:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 32
+        default_state:
+          type: boolean
+
+    DeviceConfigUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        device_name:
+          type: string
+          minLength: 1
+          maxLength: 32
+        relays:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelayConfigUpdate'
 
   responses:
     Unauthorized:
@@ -317,3 +437,4 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             error: Invalid relay ID
+    

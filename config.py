@@ -1,12 +1,13 @@
-# Конфигурация устройства
+# Конфигурация устройства (заводские значения).
+# Пользовательские изменения хранятся в device_config.json и имеют приоритет.
 WIFI_SSID = "111"
 WIFI_PASSWORD = "guga777gugi1"
 
 # Конфигурация реле (GPIO пины ESP32)
 RELAY_PINS = [
-    {"id": 1, "pin": 0, "name": "Розетка 1"},
-    {"id": 2, "pin": 1, "name": "Розетка 2"},
-    {"id": 3, "pin": 2, "name": "Розетка 3"},
+    {"id": 1, "pin": 0, "name": "Чайник", "default_state": False},
+    {"id": 2, "pin": 1, "name": "Торшер", "default_state": True},
+    {"id": 3, "pin": 2, "name": "Фонарь", "default_state": True},
 ]
 
 # API ключ для авторизации (измените на свой секретный ключ)
@@ -14,8 +15,8 @@ API_KEY = "api__HiGeHNTfboIizRfeJa0BQYcAhfbF8bis"
 
 # Настройки сервера
 HTTP_PORT = 80
-DEVICE_NAME = "Smart Sockets ESP32"
-DEVICE_VERSION = "1.0.0"
+DEVICE_NAME = "Smart Sockets ESP32 Wroom"
+DEVICE_VERSION = "1.1.0"
 
 # Конфигурация OLED дисплея (I2C)
 DISPLAY_CONFIG = {
